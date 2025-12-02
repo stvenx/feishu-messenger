@@ -1,0 +1,6 @@
+name: "Feishu Bot Message"
+description: "发送消息到飞书自定义机器人"
+runs:
+  using: "docker"
+  image: "Dockerfile"
+
