@@ -22,8 +22,8 @@ LABEL "com.github.actions.icon"="bell"
 LABEL "com.github.actions.color"="blue"
 
 LABEL version="1.0.0"
-LABEL repository="https://github.com/stvenx/feishu-messager.git"
-LABEL homepage="https://github.com/stvenx/feishu-messager.git"
+LABEL repository="https://github.com/stvenx/feishu-messenger.git"
+LABEL homepage="https://github.com/stvenx/feishu-messenger.git"
 LABEL maintainer="stvenx"
 
 WORKDIR /root/

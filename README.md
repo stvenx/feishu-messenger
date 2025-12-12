@@ -27,7 +27,7 @@ This action wraps the [Feishu Bot Post Message API](https://open.feishu.cn/docum
 
 ```yaml
 - name: Notify Feishu
-  uses: stvenx/feishu-messager@v1
+  uses: stvenx/feishu-messenger@v1
   with:
     bot_token: ${{ secrets.BOT_TOKEN }}
     msg_type: 'text'
@@ -38,7 +38,7 @@ This action wraps the [Feishu Bot Post Message API](https://open.feishu.cn/docum
 
 ```yaml
 - name: Notify Feishu
-  uses: stvenx/feishu-messager@v1
+  uses: stvenx/feishu-messenger@v1
   with:
     bot_token: ${{ secrets.BOT_TOKEN }}
     msg_type: 'markdown'
@@ -53,7 +53,7 @@ This action wraps the [Feishu Bot Post Message API](https://open.feishu.cn/docum
 
 ```yaml
 - name: Notify Feishu from file
-  uses: stvenx/feishu-messager@v1
+  uses: stvenx/feishu-messenger@v1
   with:
     bot_token: ${{ secrets.BOT_TOKEN }}
     msg_type: 'text'
@@ -66,7 +66,7 @@ This action wraps the [Feishu Bot Post Message API](https://open.feishu.cn/docum
 
 ```yaml
 - name: Notify Feishu with @users
-  uses: stvenx/feishu-messager@v1
+  uses: stvenx/feishu-messenger@v1
   with:
     bot_token: ${{ secrets.BOT_TOKEN }}
     user_maps: ${{ secrets.USER_MAPS }}

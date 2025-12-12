@@ -11,7 +11,7 @@ jobs:
         uses: actions/checkout@master
 
       - name: Send Notification
-        uses: stvenx/feishu-messager@master
+        uses: stvenx/feishu-messenger@master
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           MSG_TYPE: text
