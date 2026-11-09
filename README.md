@@ -6,7 +6,9 @@ This action wraps the [Feishu Bot Post Message API](https://open.feishu.cn/docum
 
 ## 用法
 
-这是一个 Docker Action，使用 `with:` 参数传递配置。将发送消息的 token 参数配置到 GitHub Secret 中，并配置发送的消息内容。
+这是一个 **composite action**，不需要 Docker。运行时取 Go 二进制执行，用 `with:` 传参。
+
+> **v2.0.0 起不再是 Docker Action。** 迁移说明见文末「从 v1 升级」。
 
 ### 配置参数
 
@@ -18,6 +20,8 @@ This action wraps the [Feishu Bot Post Message API](https://open.feishu.cn/docum
 | `message_file` | 从文件中读取消息内容 | ❌* | - |
 | `user_maps`    | 用户映射配置，格式：`stvenx:ou_xxxx,lizhi:ou_yyyy`（用户名:open_id） | ❌ | - |
 | `assignees`    | 需要 @的用户列表（JSON格式），通常从 GitHub 事件中获取 | ❌ | - |
+| `version`      | 二进制版本 | ❌ | `v2.0.0` |
+| `release_url`  | release 下载地址前缀，可指向内网镜像 | ❌ | GitHub releases |
 
 > \* `post_message` 和 `message_file` 二选一，至少需要提供一个。
 
@@ -27,7 +31,7 @@ This action wraps the [Feishu Bot Post Message API](https://open.feishu.cn/docum
 
 ```yaml
 - name: Notify Feishu
-  uses: stvenx/feishu-messenger@v1
+  uses: stvenx/feishu-messenger@v2.0.0
   with:
     bot_token: ${{ secrets.BOT_TOKEN }}
     msg_type: 'text'
@@ -38,7 +42,7 @@ This action wraps the [Feishu Bot Post Message API](https://open.feishu.cn/docum
 
 ```yaml
 - name: Notify Feishu
-  uses: stvenx/feishu-messenger@v1
+  uses: stvenx/feishu-messenger@v2.0.0
   with:
     bot_token: ${{ secrets.BOT_TOKEN }}
     msg_type: 'markdown'
@@ -53,7 +57,7 @@ This action wraps the [Feishu Bot Post Message API](https://open.feishu.cn/docum
 
 ```yaml
 - name: Notify Feishu from file
-  uses: stvenx/feishu-messenger@v1
+  uses: stvenx/feishu-messenger@v2.0.0
   with:
     bot_token: ${{ secrets.BOT_TOKEN }}
     msg_type: 'text'
@@ -66,7 +70,7 @@ This action wraps the [Feishu Bot Post Message API](https://open.feishu.cn/docum
 
 ```yaml
 - name: Notify Feishu with @users
-  uses: stvenx/feishu-messenger@v1
+  uses: stvenx/feishu-messenger@v2.0.0
   with:
     bot_token: ${{ secrets.BOT_TOKEN }}
     user_maps: ${{ secrets.USER_MAPS }}
@@ -96,9 +100,24 @@ This action wraps the [Feishu Bot Post Message API](https://open.feishu.cn/docum
 2. 查看消息源码或使用飞书开放平台 API 获取用户的 open_id
 3. 或者通过飞书开放平台的「获取用户信息」接口获取
 
+### 内网镜像
+
+二进制默认从 GitHub releases 下载。国内网络慢或 self-hosted runner 不出网时，把产物同步到内网再指过去：
+
+```yaml
+- name: Notify Feishu
+  uses: stvenx/feishu-messenger@v2.0.0
+  with:
+    bot_token: ${{ secrets.BOT_TOKEN }}
+    post_message: 'done'
+    release_url: 'https://mirror.example.com/feishu-messenger/releases/download'
+```
+
+镜像需要保持 `<release_url>/<version>/<asset>` 的目录结构，asset 名见下节。
+
 ### 向后兼容性
 
-本 Action 同时支持 `with:` 参数（推荐）和环境变量方式。如果使用环境变量，参数名需要转换为大写格式（如 `BOT_TOKEN`、`POST_MESSAGE` 等）。
+同时支持 `with:` 参数（推荐）和环境变量方式。使用环境变量时参数名转大写（`BOT_TOKEN`、`POST_MESSAGE` 等），但要注意环境变量必须在 job 或 workflow 级 `env:` 声明才能被 action 读到。
 
 ## 获取 BOT_TOKEN
 
@@ -108,7 +127,50 @@ This action wraps the [Feishu Bot Post Message API](https://open.feishu.cn/docum
 4. 完成后会生成 Webhook 地址，格式为：`https://open.feishu.cn/open-apis/bot/v2/hook/{token}`
 5. 将 `{token}` 部分配置到 GitHub Secrets 中的 `BOT_TOKEN`
 
+## 从 v1 升级
+
+v1 是 Docker Action（`image: docker://ghcr.io/stvenx/feishu-messenger:latest`），要求 runner 上有 Docker daemon。v2 改成 composite action，不需要 Docker，可以跑在没有 daemon 的环境（比如 ARC 的 runner Pod）。
+
+调用方只需要改 ref：
+
+```diff
+- uses: stvenx/feishu-messenger@master
++ uses: stvenx/feishu-messenger@v2.0.0
+```
+
+**入参完全不变**，`with:` 和环境变量两种写法都照旧。
+
+ghcr.io 上的镜像不再更新，但已有 tag 仍在，钉死旧 ref 的调用方不受影响。
+
+## 工作原理
+
+`scripts/run.sh` 按以下顺序取二进制：
+
+1. **action 目录缓存**（`bin/`）—— 同一 job 内重复调用不重复下载
+2. **GitHub release 下载** —— 带 sha256 校验，校验失败直接退出
+3. **本地 go 编译** —— 兜底。源码随 action checkout 一起到位，`go.mod` 零依赖，编译不需要网络
+
+正常情况走第 2 步；第 3 步只在 release 不可达且 runner 上有 go 时触发。
+
+### release 产物命名
+
+```
+feishu-messenger-<version-without-v>-<os>-<arch>[.exe]
+sha256sums.txt
+```
+
+例：`feishu-messenger-2.0.0-linux-amd64`。支持 linux/darwin 的 amd64/arm64，以及 windows/amd64。
+
+### 本地构建
+
+```bash
+VERSION=v2.0.0 ./scripts/build-release.sh   # 产物在 dist/
+```
+
+打 `v*` tag 会触发 `.github/workflows/release.yml`，自动交叉编译并建 release。
+
 ## License
 
 基于 [MIT License](LICENSE)。
+
 
