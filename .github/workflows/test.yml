@@ -8,10 +8,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@master
+        uses: actions/checkout@v4
 
+      # 用 ./ 引用工作副本，验证的是本分支的 action 而不是 master
       - name: Send Notification
-        uses: stvenx/feishu-messenger@master
-        env:
-          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-          POST_MESSAGE: 'Action Build Success'
+        uses: ./
+        with:
+          bot_token: ${{ secrets.BOT_TOKEN }}
+          post_message: 'Action Build Success'

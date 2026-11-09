@@ -24,7 +24,27 @@ inputs:
   assignees:
     description: "需要 @的用户列表（JSON格式）"
     required: false
+  version:
+    description: "feishu-messenger 二进制版本"
+    required: false
+    default: "v2.0.0"
+  release_url:
+    description: "release 下载地址前缀，可指向内网镜像"
+    required: false
+    default: "https://github.com/stvenx/feishu-messenger/releases/download"
 runs:
-  using: "docker"
-  image: "docker://ghcr.io/stvenx/feishu-messenger:latest"
-
+  using: "composite"
+  steps:
+    - name: Run feishu-messenger
+      shell: bash
+      run: "$GITHUB_ACTION_PATH/scripts/run.sh"
+      env:
+        GITHUB_ACTION_PATH: ${{ github.action_path }}
+        FM_VERSION: ${{ inputs.version }}
+        FM_RELEASE_URL: ${{ inputs.release_url }}
+        INPUT_BOT_TOKEN: ${{ inputs.bot_token }}
+        INPUT_MSG_TYPE: ${{ inputs.msg_type }}
+        INPUT_POST_MESSAGE: ${{ inputs.post_message }}
+        INPUT_MESSAGE_FILE: ${{ inputs.message_file }}
+        INPUT_USER_MAPS: ${{ inputs.user_maps }}
+        INPUT_ASSIGNEES: ${{ inputs.assignees }}
